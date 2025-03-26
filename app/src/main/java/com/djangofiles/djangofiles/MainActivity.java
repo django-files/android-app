@@ -32,6 +32,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Objects;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
@@ -45,7 +46,6 @@ import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String LOG_TAG = "com.djangofiles.djangofiles";
     private static final String PREFS_NAME = "AppPreferences";
     private static final String URL_KEY = "saved_url";
     private static final String TOKEN_KEY = "auth_token";
@@ -63,11 +63,9 @@ public class MainActivity extends AppCompatActivity {
         webView = findViewById(R.id.webview);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setUserAgentString("AndroidDjangoFiles");
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
         webView.setWebViewClient(new MyWebViewClient());
-
-        // Handle Intent
-        handleIntent(getIntent());
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -75,52 +73,86 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        SharedPreferences preferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String savedUrl = preferences.getString(URL_KEY, null);
-        Log.d(LOG_TAG, "savedUrl: " + savedUrl);
-        String authToken = preferences.getString(TOKEN_KEY, null);
-        Log.d(LOG_TAG, "authToken: " + authToken);
+        Log.d("onCreate", "----- onCreate -----");
+        Log.d("onCreate", "getAction: " + getIntent().getAction());
+        Log.d("onCreate", "getData: " + getIntent().getData());
+        Log.d("onCreate", "getExtras: " + getIntent().getExtras());
 
-        if (savedUrl == null || savedUrl.isEmpty()) {
-            showUrlInputDialog(preferences);
-        } else {
-            webView.loadUrl(savedUrl);
-        }
+        // Handle Intent
+        handleIntent(getIntent());
 
         // Request Permissions at Start for Now...
         requestPermissions();
 
+        // // Token is handled in WebAppInterface via the websites main.js
         // webView.evaluateJavascript("getAuthToken();", null);
-        // Log.d(LOG_TAG, "document.getElementById('auth-token').value");
+        // Log.d("onCreate", "document.getElementById('auth-token').value");
         // webView.evaluateJavascript("getAuthToken();", null);
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        Log.d("onNewIntent", "intent: " + intent);
         handleIntent(intent);
     }
 
     private void handleIntent(Intent intent) {
-        if (Intent.ACTION_VIEW.equals(intent.getAction())) {
-            // Handle open with
-            Uri fileUri = intent.getData();
-            if (fileUri != null) {
-                processSharedFile(fileUri); // Implement your file handling logic
+        // TODO: Need to do some serious debugging on intent handling...
+        if (Intent.ACTION_MAIN.equals(intent.getAction())) {
+            Log.d("handleIntent", "ACTION_MAIN");
+            SharedPreferences preferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            String savedUrl = preferences.getString(URL_KEY, null);
+            Log.d("onCreate", "savedUrl: " + savedUrl);
+            String authToken = preferences.getString(TOKEN_KEY, null);
+            Log.d("onCreate", "authToken: " + authToken);
+
+            String currentUrl = webView.getUrl();
+            Log.d("onCreate", "currentUrl: " + currentUrl);
+
+            if (savedUrl == null || savedUrl.isEmpty()) {
+                showSettingsDialog();
+            } else {
+                if (currentUrl == null) {
+                    Log.d("onCreate", "webView.loadUrl");
+                    webView.loadUrl(savedUrl);
+                } else {
+                    Log.d("onCreate", "SKIPPING  webView.loadUrl");
+                }
+            }
+        } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+            Log.d("handleIntent", "ACTION_VIEW");
+            Uri uri = intent.getData();
+            Log.d("handleIntent", "uri: " + uri);
+            if (uri != null) {
+                if ("djangofiles".equals(uri.getScheme())) {
+                    Log.d("handleIntent", "Deep Link: " + uri);
+                    if ("serverlist".equals(uri.getHost())) {
+                        Log.d("handleIntent", "showSettingsDialog");
+                        showSettingsDialog();
+                    } else {
+                        Log.d("handleIntent", "Unknown DeepLink!");
+                    }
+                } else {
+                    Log.d("handleIntent", "processSharedFile: " + uri);
+                    processSharedFile(uri);
+                }
+            } else {
+                Log.e("IntentDebug", "Unknown Intent!");
+                //showSettingsDialog();
             }
         } else if (Intent.ACTION_SEND.equals(intent.getAction()) && intent.getType() != null) {
+            Log.d("handleIntent", "ACTION_SEND");
             if ("text/plain".equals(intent.getType())) {
-                // Handle text sharing
                 Toast.makeText(this, "Not Implemented.", Toast.LENGTH_SHORT).show();
             } else {
-                // Handle file sharing
                 Uri fileUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
                 if (fileUri != null) {
                     processSharedFile(fileUri);
                 }
             }
         } else if (Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction())) {
-            // Handle multiple file sharing
+            Log.d("handleIntent", "ACTION_SEND_MULTIPLE");
             ArrayList<Uri> fileUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
             if (fileUris != null) {
                 for (Uri fileUri : fileUris) {
@@ -130,12 +162,74 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void showSettingsDialog() {
+        SharedPreferences preferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String savedUrl = preferences.getString(URL_KEY, null);
+        Log.d("showSettingsDialog", "savedUrl: " + savedUrl);
+
+        EditText input = new EditText(this);
+        input.setHint("Example: df.cssnr.com");
+        if (savedUrl != null) {
+            input.setText(savedUrl);
+        }
+
+        runOnUiThread(() -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("App Settings")
+                    .setView(input)
+                    .setNegativeButton("Exit", (dialog, which) -> finish())
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        String url = input.getText().toString().trim();
+                        Log.d("showSettingsDialog", "setPositiveButton: url:" + url);
+                        if (url.isEmpty()) {
+                            // TODO: Need to add verification here and keep dialog open...
+                            Toast.makeText(this, "Please enter a valid URL", Toast.LENGTH_SHORT).show();
+                            finish();
+                            return;
+                        }
+                        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                            url = "https://" + url;
+                        }
+                        if (!Objects.equals(savedUrl, url)) {
+                            Log.d("showSettingsDialog", "Saving New URL.");
+                            preferences.edit().putString(URL_KEY, url).apply();
+                            webView.loadUrl(url);
+                            dialog.dismiss();
+                        } else {
+                            Log.d("showSettingsDialog", "URL NOT Changed!");
+                            finish();
+                        }
+                    })
+                    .show();
+        });
+    }
+
+    // private void showUrlInputDialog(SharedPreferences preferences) {
+    //     EditText input = new EditText(this);
+    //     input.setHint("Example: df.cssnr.com");
+    //
+    //     new AlertDialog.Builder(this)
+    //             .setTitle("Your Django Files URL")
+    //             .setView(input)
+    //             .setCancelable(false)
+    //             .setPositiveButton("Save", (dialog, which) -> {
+    //                 String url = input.getText().toString().trim();
+    //                 if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    //                     url = "https://" + url;
+    //                 }
+    //                 preferences.edit().putString(URL_KEY, url).apply();
+    //                 webView.loadUrl(url);
+    //             })
+    //             .setNegativeButton("Exit", (dialog, which) -> finish())
+    //             .show();
+    // }
+
     private void processSharedFile(Uri fileUri) {
         SharedPreferences preferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String savedUrl = preferences.getString(URL_KEY, null);
-        Log.d(LOG_TAG, "savedUrl: " + savedUrl);
+        Log.d("processSharedFile", "savedUrl: " + savedUrl);
         String authToken = preferences.getString(TOKEN_KEY, null);
-        Log.d(LOG_TAG, "authToken: " + authToken);
+        Log.d("processSharedFile", "authToken: " + authToken);
         if (savedUrl == null) {
             Toast.makeText(this, "Saved URL is not found", Toast.LENGTH_SHORT).show();
             return;
@@ -143,9 +237,9 @@ public class MainActivity extends AppCompatActivity {
 
         String uploadUrl = savedUrl + "/api/upload";
         File file = new File(getRealPathFromURI(fileUri));
-        Log.d(LOG_TAG, "uploadUrl:" + uploadUrl);
-        Log.d(LOG_TAG, "file.name:" + file.getName());
-        Log.d(LOG_TAG, "Content-Type:" + URLConnection.guessContentTypeFromName(file.getName()));
+        Log.d("processSharedFile", "uploadUrl:" + uploadUrl);
+        Log.d("processSharedFile", "file.name:" + file.getName());
+        Log.d("processSharedFile", "Content-Type:" + URLConnection.guessContentTypeFromName(file.getName()));
 
         new Thread(() -> {
             try {
@@ -182,12 +276,13 @@ public class MainActivity extends AppCompatActivity {
 
                 // Get the response code
                 int responseCode = connection.getResponseCode();
-                Log.d(LOG_TAG, "responseCode: " + responseCode);
+                Log.d("processSharedFile", "responseCode: " + responseCode);
                 String responseMessage = connection.getResponseMessage();
-                Log.d(LOG_TAG, "responseMessage: " + responseMessage);
+                Log.d("processSharedFile", "responseMessage: " + responseMessage);
 
                 if (responseCode == HttpURLConnection.HTTP_OK) {
-                    runOnUiThread(() -> parseJsonResponse(connection));
+                    String jsonURL = parseJsonResponse(connection);
+                    runOnUiThread(() -> copyToClipboard(jsonURL));
                 } else {
                     runOnUiThread(() -> Toast.makeText(MainActivity.this, "Error: " + responseMessage, Toast.LENGTH_SHORT).show());
                 }
@@ -209,26 +304,6 @@ public class MainActivity extends AppCompatActivity {
             return filePath;
         }
         return null;
-    }
-
-    private void showUrlInputDialog(SharedPreferences preferences) {
-        EditText input = new EditText(this);
-        input.setHint("Example: df.cssnr.com");
-
-        new AlertDialog.Builder(this)
-                .setTitle("Your Django Files URL")
-                .setView(input)
-                .setCancelable(false)
-                .setPositiveButton("Save", (dialog, which) -> {
-                    String url = input.getText().toString().trim();
-                    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                        url = "https://" + url;
-                    }
-                    preferences.edit().putString(URL_KEY, url).apply();
-                    webView.loadUrl(url);
-                })
-                .setNegativeButton("Exit", (dialog, which) -> finish())
-                .show();
     }
 
     private void requestPermissions() {
@@ -268,8 +343,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void parseJsonResponse(HttpURLConnection connection) {
+    public String parseJsonResponse(HttpURLConnection connection) {
         try {
+            Log.d("parseJsonResponse", "Begin.");
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             StringBuilder response = new StringBuilder();
             String inputLine;
@@ -278,23 +354,23 @@ public class MainActivity extends AppCompatActivity {
             }
             in.close();
 
-            // Parse Values
+            Log.d("parseJsonResponse", "response: " + response);
             JSONObject jsonResponse = new JSONObject(response.toString());
-            Log.d(LOG_TAG, "JSONObject: " + jsonResponse);
+            Log.d("parseJsonResponse", "JSONObject: " + jsonResponse);
 
             String name = jsonResponse.getString("name");
             String raw = jsonResponse.getString("raw");
             String url = jsonResponse.getString("url");
 
-            Log.d(LOG_TAG, "Name: " + name);
-            Log.d(LOG_TAG, "RAW: " + raw);
-            Log.d(LOG_TAG, "URL: " + url);
+            Log.d("parseJsonResponse", "Name: " + name);
+            Log.d("parseJsonResponse", "RAW: " + raw);
+            Log.d("parseJsonResponse", "URL: " + url);
 
-            copyToClipboard(url);
+            return url;
 
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(MainActivity.this, "Error Parsing Response", Toast.LENGTH_SHORT).show();
+            return null;
         }
     }
 
@@ -308,7 +384,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "Clipboard not available", Toast.LENGTH_SHORT).show();
         }
     }
-
 
     private class MyWebViewClient extends WebViewClient {
         @Override

@@ -11,6 +11,7 @@
 
 # Django Files Android Application
 
+- [Install](#Install)
 - [Support](#Support)
 - [Contributing](#Contributing)
 - [Development](#Development)
@@ -18,11 +19,46 @@
 Coming Soon...
 
 | Resources | Links                                        |
-|-----------|----------------------------------------------|
+| --------- | -------------------------------------------- |
 | Website   | https://django-files.github.io/              |
 | GitHub    | https://github.com/django-files              |
 | Server    | https://github.com/django-files/django-files |
-| IOs App   | https://github.com/django-files/ios-client/  |
+| iOS App   | https://github.com/django-files/ios-client/  |
+
+# Install
+
+Until the app is published it must be loaded with [ADB](https://developer.android.com/tools/adb).
+This requires using the command line interface or Android Studio.
+
+1. Download and Install the Android SDK Platform Tools or Android Studio.
+
+   - https://developer.android.com/tools/releases/platform-tools#downloads
+   - https://developer.android.com/studio
+
+2. Ensure that usb or wifi debugging is enabled in the Android developer settings and verify.
+
+```shell
+$ adb devices
+List of devices attached
+RF9M33Z1Q0M     device
+```
+
+3. Download or build a debug apk (use gradle or Android Studio).
+
+   - https://github.com/django-files/android-app/releases
+
+4. Unzip the release and change into the directory.
+   If you built a release it should be in `app/build/outputs/apk/debug`.
+5. Then install the apk to your device with adb.
+
+```shell
+$ adb -s RF9M33Z1Q0M install .\app-debug.apk
+
+Performing Streamed Install
+Success
+```
+
+For more details see the [ADB Docs](https://developer.android.com/tools/adb#move).
 
 # Support
 
@@ -44,3 +80,5 @@ Currently, the best way to contribute to this project is to star this project on
 # Development
 
 Android Studio: https://developer.android.com/studio
+
+For now see [Install](#Install).

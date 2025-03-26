@@ -8,7 +8,6 @@ import android.widget.Toast;
 
 public class WebAppInterface {
 
-    private static final String LOG_TAG = "com.djangofiles.djangofiles";
     private static final String PREFS_NAME = "AppPreferences";
     private static final String TOKEN_KEY = "auth_token";
 
@@ -34,14 +33,28 @@ public class WebAppInterface {
      */
     @JavascriptInterface
     public void receiveAuthToken(String authToken) {
-        Log.d(LOG_TAG, "Received auth token: " + authToken);
-        Log.d(LOG_TAG, "PREFS_NAME: " + PREFS_NAME);
+        Log.d("receiveAuthToken", "Received auth token: " + authToken);
+        Log.d("receiveAuthToken", "PREFS_NAME: " + PREFS_NAME);
         SharedPreferences preferences = mContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        Log.d(LOG_TAG, "TOKEN_KEY: " + TOKEN_KEY);
+        Log.d("receiveAuthToken", "TOKEN_KEY: " + TOKEN_KEY);
         preferences.edit().putString(TOKEN_KEY, authToken).apply();
         // SharedPreferences.Editor editor = preferences.edit();
         // editor.putString(TOKEN_KEY, authToken);
         // editor.apply();
-        Log.d(LOG_TAG, "Auth Token Saved.");
+        Log.d("receiveAuthToken", "Auth Token Saved.");
     }
+
+    // @JavascriptInterface
+    // public void showSettingsDialog() {
+    //     if (mContext instanceof MainActivity) {
+    //         ((MainActivity) mContext).runOnUiThread(() -> {
+    //             new android.app.AlertDialog.Builder(mContext)
+    //                     .setTitle("App Settings")
+    //                     .setMessage("This is where your settings would be displayed.")
+    //                     .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+    //                     .show();
+    //         });
+    //     }
+    // }
+
 }
