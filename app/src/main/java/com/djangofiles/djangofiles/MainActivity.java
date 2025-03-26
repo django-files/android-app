@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
         webView = findViewById(R.id.webview);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setUserAgentString("AndroidDjangoFiles");
+        webView.getSettings().setUserAgentString("DjangoFiles Android");
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
         webView.setWebViewClient(new MyWebViewClient());
 
@@ -81,8 +81,7 @@ public class MainActivity extends AppCompatActivity {
         // Handle Intent
         handleIntent(getIntent());
 
-        // Request Permissions at Start for Now...
-        requestPermissions();
+        // requestPermissions moved to handleIntent above in ACTION_MAIN
 
         // // Token is handled in WebAppInterface via the websites main.js
         // webView.evaluateJavascript("getAuthToken();", null);
@@ -110,6 +109,9 @@ public class MainActivity extends AppCompatActivity {
             String currentUrl = webView.getUrl();
             Log.d("onCreate", "currentUrl: " + currentUrl);
 
+            // Request Permissions in ACTION_MAIN for now...
+            requestPermissions();
+
             if (savedUrl == null || savedUrl.isEmpty()) {
                 showSettingsDialog();
             } else {
@@ -131,15 +133,17 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("handleIntent", "showSettingsDialog");
                         showSettingsDialog();
                     } else {
-                        Log.d("handleIntent", "Unknown DeepLink!");
+                        Log.d("handleIntent", "Not Configured DeepLink!");
+                        finish();
                     }
                 } else {
                     Log.d("handleIntent", "processSharedFile: " + uri);
                     processSharedFile(uri);
                 }
             } else {
+                // TODO: Inform the user about this unknown event?
                 Log.e("IntentDebug", "Unknown Intent!");
-                //showSettingsDialog();
+                finish();
             }
         } else if (Intent.ACTION_SEND.equals(intent.getAction()) && intent.getType() != null) {
             Log.d("handleIntent", "ACTION_SEND");
@@ -323,15 +327,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if ((keyCode == KeyEvent.KEYCODE_BACK) && webView.canGoBack()) {
-            webView.goBack();
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
-    }
-
-    @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_CODE_READ_EXTERNAL_STORAGE) {
@@ -341,6 +336,15 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Permission denied. Cannot access file.", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if ((keyCode == KeyEvent.KEYCODE_BACK) && webView.canGoBack()) {
+            webView.goBack();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     public String parseJsonResponse(HttpURLConnection connection) {
@@ -375,6 +379,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void copyToClipboard(String url) {
+        webView.loadUrl(url);
         ClipboardManager clipboard = (ClipboardManager) MainActivity.this.getSystemService(Context.CLIPBOARD_SERVICE);
         if (clipboard != null) {
             android.content.ClipData clip = android.content.ClipData.newPlainText("URL", url);

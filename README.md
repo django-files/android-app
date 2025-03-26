@@ -23,22 +23,27 @@ Coming Soon...
 | Website   | https://django-files.github.io/              |
 | GitHub    | https://github.com/django-files              |
 | Server    | https://github.com/django-files/django-files |
-| iOS App   | https://github.com/django-files/ios-client/  |
+| iOS App   | https://github.com/django-files/ios-client   |
 
 # Install
 
 Until the app is published it must be loaded with [ADB](https://developer.android.com/tools/adb).
-This requires using the command line interface or Android Studio.
+This requires using Android Studio or the command line interface.
 
-1. Download and Install the Android SDK Platform Tools or Android Studio.
+1. Download and Install Android Studio or the Android SDK Platform Tools.
 
-   - https://developer.android.com/tools/releases/platform-tools#downloads
    - https://developer.android.com/studio
+   - https://developer.android.com/tools/releases/platform-tools#downloads
 
 2. Ensure that usb or wifi debugging is enabled in the Android developer settings and verify.
 
+If using **Android Studio**, your device should show up. Simply import the project, and press Play ▶️
+
+Otherwise, continue with the steps below...
+
 ```shell
 $ adb devices
+
 List of devices attached
 RF9M33Z1Q0M     device
 ```
@@ -48,7 +53,9 @@ RF9M33Z1Q0M     device
    - https://github.com/django-files/android-app/releases
 
 4. Unzip the release and change into the directory.
-   If you built a release it should be in `app/build/outputs/apk/debug`.
+
+The built apk should be here: `app/build/outputs/apk/debug`
+
 5. Then install the apk to your device with adb.
 
 ```shell
@@ -58,7 +65,7 @@ Performing Streamed Install
 Success
 ```
 
-For more details see the [ADB Docs](https://developer.android.com/tools/adb#move).
+For more details, see the [ADB Documentation](https://developer.android.com/tools/adb#move).
 
 # Support
 
