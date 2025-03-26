@@ -30,8 +30,29 @@ The URL to the file is automatically copied to the clipboard and the preview is 
 
 ## Install
 
-Until the app is published it must be loaded with [ADB](https://developer.android.com/tools/adb).  
+Until the app is published it must be loaded with [ADB](https://developer.android.com/tools/adb) or [Android Studio](https://developer.android.com/studio).  
 This requires using Android Studio or the command line interface.
+
+<details><summary>▶️ Click Here to View Quick CLI Steps</summary>
+
+```shell
+$ which adb
+C:\Users\Shane\Android\sdk\platform-tools\adb.EXE
+
+$ wget https://github.com/django-files/android-app/releases/latest/download/app-debug.apk
+
+$ adb devices
+List of devices attached
+RF9M33Z1Q0M     device
+
+$ adb -s RF9M33Z1Q0M install .\app-debug.apk
+Performing Streamed Install
+Success
+```
+
+See below for more details...
+
+</details>
 
 1. Download and Install Android Studio or the Android SDK Platform Tools.
 
@@ -56,6 +77,13 @@ RF9M33Z1Q0M     device
 3. Download or build a debug apk (use gradle or Android Studio).
 
 https://github.com/django-files/android-app/releases
+
+```shell
+./gradlew build
+./gradlew assemble
+```
+
+Note: Use `gradlew.bat` for Windows.
 
 4. Unzip the release and change into the directory.
 

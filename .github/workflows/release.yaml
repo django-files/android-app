@@ -50,20 +50,24 @@ jobs:
       - name: "Debug Build"
         continue-on-error: true
         run: |
+          echo "ref: ${{ github.ref }}"
+          echo "name: ${{ github.repository_owner }}-debug"
+          echo "dir: ${{ env.debug }}"
+          echo "glob: ${{ env.debug }}/*.apk"
           ls -lAh ${{ env.debug }}
 
       - name: "Upload Artifacts"
         if: ${{ !github.event.act }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.GITHUB_REPOSITORY_OWNER }}-debug
+          name: ${{ github.repository_owner }}-debug
           path: ${{ env.debug }}
 
       - name: "Upload to Release"
         if: ${{ github.event_name == 'release' }}
         uses: svenstaro/upload-release-action@v2
         with:
-          file: ${{ env.debug }}
+          file: ${{ env.debug }}/*.apk
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true

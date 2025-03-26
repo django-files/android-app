@@ -172,14 +172,17 @@ public class MainActivity extends AppCompatActivity {
         Log.d("showSettingsDialog", "savedUrl: " + savedUrl);
 
         EditText input = new EditText(this);
-        input.setHint("Example: df.cssnr.com");
+        input.setHint(this.getString(R.string.settings_input_place));
         if (savedUrl != null) {
             input.setText(savedUrl);
         }
+        input.requestFocus();
 
         runOnUiThread(() -> {
             new AlertDialog.Builder(this)
-                    .setTitle("App Settings")
+                    .setCancelable(false)
+                    .setTitle(this.getString(R.string.settings_title))
+                    .setMessage(this.getString(R.string.settings_message))
                     .setView(input)
                     .setNegativeButton("Exit", (dialog, which) -> finish())
                     .setPositiveButton("OK", (dialog, which) -> {
@@ -187,12 +190,15 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("showSettingsDialog", "setPositiveButton: url:" + url);
                         if (url.isEmpty()) {
                             // TODO: Need to add verification here and keep dialog open...
-                            Toast.makeText(this, "Please enter a valid URL", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, this.getString(R.string.settings_tst_invalid), Toast.LENGTH_SHORT).show();
                             finish();
                             return;
                         }
                         if (!url.startsWith("http://") && !url.startsWith("https://")) {
                             url = "https://" + url;
+                        }
+                        if (url.endsWith("/")) {
+                            url = url.substring(0, url.length() - 1);
                         }
                         if (!Objects.equals(savedUrl, url)) {
                             Log.d("showSettingsDialog", "Saving New URL.");
@@ -235,6 +241,7 @@ public class MainActivity extends AppCompatActivity {
         String authToken = preferences.getString(TOKEN_KEY, null);
         Log.d("processSharedFile", "authToken: " + authToken);
         if (savedUrl == null) {
+            // TODO: Show settings dialog here...
             Toast.makeText(this, "Saved URL is not found", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -396,14 +403,21 @@ public class MainActivity extends AppCompatActivity {
             SharedPreferences preferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             String savedUrl = preferences.getString(URL_KEY, null);
             String requestUrl = request.getUrl().toString();
+            Log.d("shouldOverrideUrlLoading", "requestUrl: " + requestUrl);
 
             if ((savedUrl != null && requestUrl.startsWith(savedUrl)) ||
-                    requestUrl.startsWith("https://discord.com/oauth2")) {
+                    requestUrl.startsWith("https://discord.com/oauth2") ||
+                    requestUrl.startsWith("https://github.com/sessions/two-factor/app") ||
+                    requestUrl.startsWith("https://github.com/login") ||
+                    requestUrl.startsWith("https://accounts.google.com/v3/signin") ||
+                    requestUrl.startsWith("https://accounts.google.com/o/oauth2/v2/auth")) {
+                Log.d("shouldOverrideUrlLoading", "FALSE");
                 return false;
             }
 
             Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
             startActivity(intent);
+            Log.d("shouldOverrideUrlLoading", "TRUE");
             return true;
         }
     }
