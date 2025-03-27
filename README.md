@@ -14,6 +14,7 @@
   - [Setup](#Setup)
 - [Features](#Features)
   - [Planned](#Planned)
+  - [Known Issues](#Known-Issues)
 - [Development](#Development)
 - [Support](#Support)
 - [Contributing](#Contributing)
@@ -39,13 +40,16 @@ This requires using Android Studio or the command line interface.
 $ which adb
 C:\Users\Shane\Android\sdk\platform-tools\adb.EXE
 
-$ wget https://github.com/django-files/android-app/releases/latest/download/app-debug.apk
-
 $ adb devices
 List of devices attached
 RF9M33Z1Q0M     device
 
-$ adb -s RF9M33Z1Q0M install .\app-debug.apk
+$ wget https://github.com/django-files/android-app/releases/latest/download/app-debug.apk
+
+$ ls
+app-debug.apk
+
+$ adb -s RF9M33Z1Q0M install app-debug.apk
 Performing Streamed Install
 Success
 ```
@@ -92,7 +96,7 @@ The built apk should be here: `app/build/outputs/apk/debug`
 5. Then install the apk to your device with adb.
 
 ```shell
-$ adb -s RF9M33Z1Q0M install .\app-debug.apk
+$ adb -s RF9M33Z1Q0M install app-debug.apk
 
 Performing Streamed Install
 Success
@@ -111,11 +115,19 @@ For more details, see the [ADB Documentation](https://developer.android.com/tool
 
 - Share or Open any file and automatically copy the URL to the clipboard.
 - Ability to manually change servers by entering a new URL from the Server List menu.
+- Supports Local Login, GitHub OAuth, Google OAuth, Discord OAuth (w/o passkeys).
 
 ### Planned
 
 - Ability to save multiple servers and switch between them automatically in the Server List menu.
 - Ability for the app to log you in if your session is expired or when switching servers.
+
+### Known Issues
+
+- If you enter an incorrect url, you must clear the apps data or reinstall the app.
+- The app gets logged out if the session expires; however, sharing continues to work.
+- Login with Google OAuth gives an error; however, if you wait ~15 seconds it will succeed.
+- Login with Discord OAuth passkeys does not work.
 
 # Development
 
