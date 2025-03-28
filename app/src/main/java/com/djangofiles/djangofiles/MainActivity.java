@@ -11,7 +11,9 @@ import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -51,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
+
         setContentView(R.layout.activity_main);
 
         webView = findViewById(R.id.webview);
@@ -66,12 +70,11 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Handle Intent
         Log.d("onCreate", "----- onCreate -----");
         Log.d("onCreate", "getAction: " + getIntent().getAction());
         Log.d("onCreate", "getData: " + getIntent().getData());
         Log.d("onCreate", "getExtras: " + getIntent().getExtras());
-
-        // Handle Intent
         handleIntent(getIntent());
 
         // // Token is handled in WebAppInterface via the websites main.js
@@ -90,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onNewIntent(Intent intent) {
+    protected void onNewIntent(@NonNull Intent intent) {
         super.onNewIntent(intent);
         Log.d("onNewIntent", "intent: " + intent);
         handleIntent(intent);
@@ -230,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d("processSharedFile", "savedUrl: " + savedUrl);
         String authToken = preferences.getString(TOKEN_KEY, null);
         Log.d("processSharedFile", "authToken: " + authToken);
-        if (savedUrl == null) {
+        if (savedUrl == null || authToken == null) {
             // TODO: Show settings dialog here...
             Toast.makeText(this, this.getString(R.string.tst_no_url), Toast.LENGTH_SHORT).show();
             return;
@@ -272,7 +275,6 @@ public class MainActivity extends AppCompatActivity {
                 outputStream.writeBytes("Content-Transfer-Encoding: binary\r\n\r\n");
 
                 // Write the file content
-                // FileInputStream fileInputStream = new FileInputStream(file);
                 byte[] buffer = new byte[4096];
                 int bytesRead;
                 while ((bytesRead = file.read(buffer)) != -1) {
@@ -371,12 +373,17 @@ public class MainActivity extends AppCompatActivity {
     private class MyWebViewClient extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-            SharedPreferences preferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            String savedUrl = preferences.getString(URL_KEY, null);
             String requestUrl = request.getUrl().toString();
             Log.d("shouldOverrideUrlLoading", "requestUrl: " + requestUrl);
 
-            if ((savedUrl != null && requestUrl.startsWith(savedUrl)) ||
+            SharedPreferences preferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            String savedUrl = preferences.getString(URL_KEY, null);
+            Log.d("shouldOverrideUrlLoading", "savedUrl: " + savedUrl);
+
+            if ((savedUrl != null &&
+                    requestUrl.startsWith(savedUrl) &&
+                    !requestUrl.startsWith(savedUrl + "/r/") &&
+                    !requestUrl.startsWith(savedUrl + "/raw/")) ||
                     requestUrl.startsWith("https://discord.com/oauth2") ||
                     requestUrl.startsWith("https://github.com/sessions/two-factor/app") ||
                     requestUrl.startsWith("https://github.com/login") ||
@@ -390,6 +397,20 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             Log.d("shouldOverrideUrlLoading", "TRUE - in browser");
             return true;
+        }
+
+        @Override
+        public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError errorResponse) {
+            Log.d("onReceivedError", "ERROR: " + errorResponse.getErrorCode());
+            Toast.makeText(view.getContext(), "HTTP error: "+errorResponse.getDescription(), Toast.LENGTH_LONG).show();
+            //showSettingsDialog();
+        }
+
+        @Override
+        public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+            Log.d("onReceivedHttpError", "ERROR: " + errorResponse.getStatusCode());
+            Toast.makeText(view.getContext(), "HTTP error: "+errorResponse.getReasonPhrase(), Toast.LENGTH_LONG).show();
+            //showSettingsDialog();
         }
     }
 }
