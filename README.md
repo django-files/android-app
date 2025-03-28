@@ -10,6 +10,11 @@
 
 # Django Files Android App
 
+> [!CAUTION]
+> This project has been deprecated in favor of a Kotlin version.
+>
+> - https://github.com/django-files/android-client
+
 - [Install](#Install)
   - [Setup](#Setup)
 - [Features](#Features)
